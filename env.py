@@ -19,6 +19,7 @@ BOUNDARY_MASK = flow.StaggeredGrid(
 pressure = None
 
 DT = 0.5
+STEPS = flow.batch(time=100)
 '''
 rudder logic:
 the boat can be a point cloud object.
@@ -50,10 +51,13 @@ def step(v, p, obj, rudder: flow.Obstacle):
     return v, p, obj, rudder
 
 
-traj, _, obj_traj, rudder_trj = flow.iterate(step, flow.batch(time=200), velocity,
-                                             pressure, point_cloud, rudder, range=trange)
-anim = flow.plot([traj, CYLINDER_GEOM, rudder_trj.geometry, obj_traj], animate="time",
-                 size=(20, 10), overlay="list", frame_time=50)
+trajs = flow.iterate(step, STEPS, velocity, pressure,
+                     point_cloud, rudder, range=trange)
+traj, _, obj_traj, rudder_trj = trajs
+
+anim = flow.plot([traj, CYLINDER_GEOM, rudder_trj.geometry, obj_traj],
+                 animate="time", size=(20, 10), overlay="list", frame_time=50,
+                 color=["#43a5b3", "#f07857", "#ff87ce", "#bf2C34"])
 
 # display the simulated results
-plt.show()
+anim.save("outputs/rudder_no_control.gif", writer="pillow")

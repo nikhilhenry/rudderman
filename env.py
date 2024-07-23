@@ -4,7 +4,7 @@ Vortices start appearing after a couple of hundred steps.
 """
 
 from phi.jax import flow
-from tqdm import trange
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 SPEED = 2
@@ -19,7 +19,7 @@ BOUNDARY_MASK = flow.StaggeredGrid(
 pressure = None
 
 DT = 0.5
-STEPS = flow.batch(time=100)
+STEPS = 100
 '''
 rudder logic:
 the boat can be a point cloud object.
@@ -51,13 +51,25 @@ def step(v, p, obj, rudder: flow.Obstacle):
     return v, p, obj, rudder
 
 
-trajs = flow.iterate(step, STEPS, velocity, pressure,
-                     point_cloud, rudder, range=trange)
-traj, _, obj_traj, rudder_trj = trajs
+v_traj = [velocity]
+p_traj = [point_cloud]
+r_traj = [rudder]
 
-anim = flow.plot([traj, CYLINDER_GEOM, rudder_trj.geometry, obj_traj],
+for _ in tqdm(range(STEPS)):
+    velocity, pressure, point_cloud, rudder = step(
+        velocity, pressure, point_cloud, rudder)
+    v_traj.append(velocity)
+    p_traj.append(point_cloud)
+    r_traj.append(rudder)
+
+traj = flow.stack(v_traj, flow.batch("time"))
+p_traj = flow.stack(p_traj, flow.batch("time"))
+r_traj = flow.stack(r_traj, flow.batch("time"))
+
+anim = flow.plot([traj, CYLINDER_GEOM, r_traj.geometry, p_traj],
                  animate="time", size=(20, 10), overlay="list", frame_time=50,
                  color=["#43a5b3", "#f07857", "#ff87ce", "#bf2C34"])
 
 # display the simulated results
-anim.save("outputs/rudder_no_control.gif", writer="pillow")
+plt.show()
+anim.save("outputs/rudder_no_control_1.gif", writer="pillow")

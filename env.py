@@ -25,29 +25,28 @@ the rudder will simply act as an obstacle which spawns below the boat
 '''
 point_cloud = flow.PointCloud(flow.vec(x=5, y=5))
 # print(point_cloud.geometry.center)
-RUDDER_WIDTH = 2
+RUDDER_WIDTH = 0.5
 RUDDER_LENGTH = 5
-rudder_angle = 60
-
 rudder = flow.Obstacle(flow.geom.Cuboid(
     flow.vec(x=5, y=5), x=RUDDER_WIDTH, y=RUDDER_LENGTH))
 
 
 @flow.math.jit_compile
-def step(v, p, obj):
+def step(v, p, obj, rudder: flow.Obstacle):
     obj = flow.advect.advect(obj, v, 1.)
     # instantiate a new obstacle
-    # x, y = obj.geometry.center
+    x, y = obj.geometry.center
+    rudder = rudder.at(flow.vec(x=x, y=y))
     v = flow.advect.semi_lagrangian(v, v, 1.)
     v = v * (1 - BOUNDARY_MASK) + BOUNDARY_MASK * (SPEED, 0)
     v, p = flow.fluid.make_incompressible(
         v, [CYLINDER], flow.Solve('auto', 1e-5, x0=p))
-    return v, p, obj
+    return v, p, obj, rudder
 
 
-traj, _, obj_traj = flow.iterate(step, flow.batch(time=5), velocity,
-                                 pressure, point_cloud, range=trange)
-anim = flow.plot([traj, CYLINDER_GEOM, obj_traj, rudder.geometry], animate="time",
+traj, _, obj_traj, rudder_trj = flow.iterate(step, flow.batch(time=5), velocity,
+                                             pressure, point_cloud, rudder, range=trange)
+anim = flow.plot([traj, CYLINDER_GEOM, rudder_trj.geometry, obj_traj], animate="time",
                  size=(20, 10), overlay="list", frame_time=50)
 
 # display the simulated results

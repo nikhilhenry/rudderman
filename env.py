@@ -35,32 +35,42 @@ point_cloud = flow.PointCloud(flow.vec(x=ORIGIN_X, y=ORIGIN_Y))
 rudder = flow.Obstacle(flow.geom.Box(
     x=(ORIGIN_X-RUDDER_WIDTH, ORIGIN_X+RUDDER_WIDTH),
     y=(ORIGIN_Y-RUDDER_LENGTH, ORIGIN_Y)))
+rudder_angles = [0, 30, 60]
 
 
 @ flow.math.jit_compile
-def step(v, p, obj, rudder: flow.Obstacle):
+def step(v, p, obj, rudder: flow.Obstacle, angle):
     obj = flow.advect.advect(obj, v, DT)
     # instantiate a new obstacle
     x, y = obj.geometry.center
-    rudder = rudder.at(flow.vec(x=x, y=y-RUDDER_LENGTH_HALF))
+    rudder_new = rudder.rotated(angle).at(
+        flow.vec(x=x-(RUDDER_WIDTH*2)*flow.math.sin(angle),
+                 y=y-(RUDDER_LENGTH_HALF)*flow.math.cos(angle)))
 
     v = flow.advect.semi_lagrangian(v, v, DT)
     v = v * (1 - BOUNDARY_MASK) + BOUNDARY_MASK * (SPEED, 0)
     v, p = flow.fluid.make_incompressible(
-        v, [CYLINDER, rudder], flow.Solve('auto', 1e-5, x0=p))
-    return v, p, obj, rudder
+        v, [CYLINDER, rudder_new], flow.Solve('auto', 1e-5, x0=p))
+    return v, p, obj, rudder_new
 
 
 v_traj = [velocity]
 p_traj = [point_cloud]
 r_traj = [rudder]
 
-for _ in tqdm(range(STEPS)):
-    velocity, pressure, point_cloud, rudder = step(
-        velocity, pressure, point_cloud, rudder)
+for idx in tqdm(range(STEPS)):
+    angle = 0
+    if idx > 25:
+        angle = rudder_angles[1]
+    if idx > 50:
+        angle = rudder_angles[2]
+    if idx > 85:
+        angle = rudder_angles[0]
+    velocity, pressure, point_cloud, rudder_new = step(
+        velocity, pressure, point_cloud, rudder, angle)
     v_traj.append(velocity)
     p_traj.append(point_cloud)
-    r_traj.append(rudder)
+    r_traj.append(rudder_new)
 
 traj = flow.stack(v_traj, flow.batch("time"))
 p_traj = flow.stack(p_traj, flow.batch("time"))
@@ -72,4 +82,4 @@ anim = flow.plot([traj, CYLINDER_GEOM, r_traj.geometry, p_traj],
 
 # display the simulated results
 plt.show()
-anim.save("outputs/rudder_no_control_1.gif", writer="pillow")
+anim.save("outputs/rudder_control.gif", writer="pillow")

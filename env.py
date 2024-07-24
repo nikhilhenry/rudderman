@@ -10,8 +10,7 @@ from matplotlib import pyplot as plt
 SPEED = 2
 velocity = flow.StaggeredGrid(
     (SPEED, 0), flow.ZERO_GRADIENT, x=128, y=128, bounds=flow.Box(x=128, y=64))
-CYLINDER_GEOM = flow.geom.infinite_cylinder(
-    x=15, y=32, radius=10, inf_dim=None)
+CYLINDER_GEOM = flow.geom.infinite_cylinder(x=15, y=32, radius=10)
 CYLINDER = flow.Obstacle(CYLINDER_GEOM)
 BOUNDARY_BOX = flow.Box(x=(-1 * flow.INF, 0.5), y=None)
 BOUNDARY_MASK = flow.StaggeredGrid(
@@ -19,7 +18,7 @@ BOUNDARY_MASK = flow.StaggeredGrid(
 pressure = None
 
 DT = 0.5
-STEPS = 100
+STEPS = 10
 '''
 rudder logic:
 the boat can be a point cloud object.
@@ -27,47 +26,44 @@ the rudder will simply act as an obstacle which spawns below the boat
 '''
 ORIGIN_X = 32
 ORIGIN_Y = 10
-RUDDER_WIDTH = 0.25
+RUDDER_WIDTH = 0.5
 RUDDER_LENGTH = 2.5
 RUDDER_LENGTH_HALF = RUDDER_LENGTH / 2
+RUDDER_GEOM = flow.geom.Box(x=RUDDER_WIDTH, y=RUDDER_LENGTH)
 
 point_cloud = flow.PointCloud(flow.vec(x=ORIGIN_X, y=ORIGIN_Y))
-rudder = flow.Obstacle(flow.geom.Box(
-    x=(ORIGIN_X-RUDDER_WIDTH, ORIGIN_X+RUDDER_WIDTH),
-    y=(ORIGIN_Y-RUDDER_LENGTH, ORIGIN_Y)))
-rudder_angles = [0, 30, 60]
 
 
-@ flow.math.jit_compile
-def step(v, p, obj, rudder: flow.Obstacle, angle):
+@flow.math.jit_compile
+def step(v, p, obj, angle: float):
     obj = flow.advect.advect(obj, v, DT)
-    # instantiate a new obstacle
+
+    # create the rudder at the new angle
     x, y = obj.geometry.center
-    rudder_new = rudder.rotated(angle).at(
-        flow.vec(x=x-(RUDDER_WIDTH*2)*flow.math.sin(angle),
-                 y=y-(RUDDER_LENGTH_HALF)*flow.math.cos(angle)))
+    # convert the angle to radians
+    angle = angle * flow.math.PI / 180
+    # offset the rudder in the y-axis
+    positon = flow.vec(x=x, y=y - RUDDER_LENGTH_HALF)
+    rudder = RUDDER_GEOM.at(positon)
+    rudder = flow.geom.rotate(rudder, angle, flow.vec(x=x, y=y))
+    rudder = flow.Obstacle(rudder)
 
     v = flow.advect.semi_lagrangian(v, v, DT)
     v = v * (1 - BOUNDARY_MASK) + BOUNDARY_MASK * (SPEED, 0)
     v, p = flow.fluid.make_incompressible(
-        v, [CYLINDER, rudder_new], flow.Solve('auto', 1e-5, x0=p))
-    return v, p, obj, rudder_new
+        v, [CYLINDER, rudder], flow.Solve('auto', 1e-5, x0=p))
+    return v, p, obj, rudder
 
 
 v_traj = [velocity]
 p_traj = [point_cloud]
-r_traj = [rudder]
+r_traj = [flow.Obstacle(RUDDER_GEOM).at(
+    flow.vec(x=ORIGIN_X, y=ORIGIN_Y-RUDDER_LENGTH_HALF))]
+angle = 270 
 
 for idx in tqdm(range(STEPS)):
-    angle = 0
-    if idx > 25:
-        angle = rudder_angles[1]
-    if idx > 50:
-        angle = rudder_angles[2]
-    if idx > 85:
-        angle = rudder_angles[0]
     velocity, pressure, point_cloud, rudder_new = step(
-        velocity, pressure, point_cloud, rudder, angle)
+        velocity, pressure, point_cloud, angle)
     v_traj.append(velocity)
     p_traj.append(point_cloud)
     r_traj.append(rudder_new)
@@ -82,4 +78,4 @@ anim = flow.plot([traj, CYLINDER_GEOM, r_traj.geometry, p_traj],
 
 # display the simulated results
 plt.show()
-anim.save("outputs/rudder_control.gif", writer="pillow")
+# anim.save("outputs/rudder_control.gif", writer="pillow")

@@ -1,10 +1,12 @@
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
-from phi.jax import flow
+from phi import flow
+from matplotlib import pyplot as plt
+from matplotlib import patches as mpatches
 
 
-class KarmVortexStreetEnv(gym.Env):
+class KarmanVortexStreetEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, render_mode=None):
@@ -14,7 +16,8 @@ class KarmVortexStreetEnv(gym.Env):
         # for flow blind boat only the relative position is provided as an observation
         self.observation_space = spaces.Box(0, self.size[0], shape=(2,))
 
-        # continous actions space of degree of rudder rotation from 0 to 360 // should be these in radian instead? should these normalised
+        # continous actions space of degree of rudder rotation from 0 to 360
+        # should these be in radians instead? should these normalised
 
         self.action_space = spaces.Box(0, 360)
 
@@ -43,6 +46,11 @@ class KarmVortexStreetEnv(gym.Env):
         RUDDER_LENGTH = 2.5
         self._RUDDER_LENGTH_HALF = RUDDER_LENGTH / 2
         self._RUDDER_GEOM = flow.geom.Box(x=RUDDER_WIDTH, y=RUDDER_LENGTH)
+
+
+        # setting up for matplotlib rendering
+        self.fig = None
+        self.ax = None
 
     def _get_obs(self):
         x, y = self._boat.geometry.center
@@ -88,7 +96,10 @@ class KarmVortexStreetEnv(gym.Env):
 
         return observation, info
 
-    @flow.math.jit_compile
+    def render(self,angle=0):
+        if self.render_mode == "rgb_array":
+            return self._render_frame(angle)
+
     def _sim_step(self, v, p, obj, angle: float):
         """
         accepts angles in radians
@@ -120,11 +131,12 @@ class KarmVortexStreetEnv(gym.Env):
         info = self._get_info()
 
         # check to see that the boat is still in the world
+        [x,y] = self._boat.geometry.center.numpy()
         if (
-            self._boat.geometry.center[0] <= self.size[0]
-            and self._boat.geometry.center[0] >= 0
-            and self._boat.geometry.center[1] <= self.size[1]
-            and self._boat.geometry.center[1] >= 0
+            x > self.size[0]
+            and x < 0
+            and y > self.size[1]
+            and y < 0
         ):
             terminated = True
             reward = -1 * self._step_count
@@ -145,9 +157,22 @@ class KarmVortexStreetEnv(gym.Env):
         )
 
         if self.render_mode == "human":
+            print("need to render")
             self._render_frame(angle)
 
         return observation, reward, terminated, False, info
 
     def _render_frame(self, angle):
-        pass
+        d = flow.plot(self._CYLINDER_GEOM,size=(10,5))
+        plt.draw()
+        plt.pause(0.1)
+        plt.clf()
+
+if __name__ == "__main__":
+    env = KarmanVortexStreetEnv(render_mode="human")
+    observation = env.reset()
+    for i in range(5):
+        action = env.action_space.sample()[0]
+        print(f"Action: {action}")
+        observation, reward, done, _,info = env.step(action)
+    env.close()

@@ -57,9 +57,7 @@ def _sim_step(v, p, obj, angle: float):
 
     v = flow.advect.semi_lagrangian(v, v, _DT)
     v = v * (1 - _BOUNDARY_MASK) + _BOUNDARY_MASK * (_SPEED, 0)
-    v, p = flow.fluid.make_incompressible(
-        v, [rudder], flow.Solve("auto", 1e-5, x0=p)
-    )
+    v, p = flow.fluid.make_incompressible(v, [rudder], flow.Solve("auto", 1e-5, x0=p))
     return v, p, obj, rudder
 
 
@@ -241,5 +239,5 @@ if __name__ == "__main__":
         action = env.action_space.sample()[0]
         print(f"Action: {scale_to_angle(action)}")
         observation, reward, done, _, info = env.step([action])
-    print(observation,reward,done,info)
+    print(observation, reward, done, info)
     env.close()

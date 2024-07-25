@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import numpy as np
+import gc
 
 plt.rcParams["figure.figsize"] = (10, 5)
 
@@ -136,14 +137,15 @@ class KarmanVortexStreetEnv(gym.Env):
 
         return observation, info
 
-    def render(self):
-        if self.render_mode == "rgb_array":
+    def render(self,mode="rgb_array"):
+        if self.render_mode == "rgb_array" or mode=="rgb_array":
             return self._render_frame(self._angle)
 
     def step(self, action):
         self._step_count += 1
         # scaling the action to degrees
         action = scale_to_angle(action[0])
+        action = 0.0
         # convert the action angle to radians
         angle = flow.math.degrees_to_radians(action)
         self._angle = angle
@@ -226,29 +228,28 @@ class KarmanVortexStreetEnv(gym.Env):
         plt.ylim(0, 64)
         if self.render_mode == "human":
             plt.draw()
-            plt.pause(0.25)
+            plt.pause(0.5)
             plt.close()  #:FIXME: force phiflow to use the same figure and instead clear the figure
             return
         if self.render_mode == "rgb_array":
             canvas = FigureCanvasAgg(plt.gcf())
             canvas.draw()
-            plt.close()
             buf = canvas.buffer_rgba()
+            plt.close()
+            gc.collect()
             return np.asarray(buf)
 
 
 if __name__ == "__main__":
     env = KarmanVortexStreetEnv(render_mode="rgb_array")
     check_env(env, warn=True)
-    env = RecordVideo(
-        env,
-        video_folder="outputs/vortex-agent",
-        name_prefix="eval",
-        episode_trigger=lambda x: True,
-    )
+    env = RecordVideo( env, video_folder="./", name_prefix="eval", episode_trigger=lambda x: True,)
     observation = env.reset()
-    for i in range(100):
-        action = env.action_space.sample()[0]
-        print(f"Action: {scale_to_angle(action)}")
+    done = False
+    while not done:
+        #action = env.action_space.sample()[0]
+        action = 90 
+        #print(f"Action: {scale_to_angle(action)}")
         observation, reward, done, _, info = env.step([action])
+#        print(observation,reward,info)
     env.close()

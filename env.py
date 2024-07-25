@@ -4,6 +4,7 @@ from gymnasium import spaces
 from phi.jax import flow
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
+plt.rcParams["figure.figsize"] = (10,5)
 
 """
 Defining the phiflow constants
@@ -161,12 +162,14 @@ class KarmanVortexStreetEnv(gym.Env):
         return observation, reward, terminated, False, info
 
     def _render_frame(self, angle):
-        d = flow.plot(
-            [self._velocity, _CYLINDER_GEOM, self._boat], size=(10, 5), overlay="list"
-        )
+        #d = flow.plot( [self._velocity, _CYLINDER_GEOM, self._boat], size=(10, 5), overlay="list")
+        circle  = mpatches.Circle((_CYLINDER_X,_CYLINDER_Y),_OBSTACLE_DIAMETER / 2,fc="k")
+        plt.gca().add_patch(circle)
+        plt.xlim(0,128)
+        plt.ylim(0,64)
         plt.draw()
-        plt.pause(1)
-        plt.close()
+        plt.pause(0.25)
+        plt.clf()
 
 
 if __name__ == "__main__":

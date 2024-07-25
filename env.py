@@ -166,7 +166,7 @@ class KarmanVortexStreetEnv(gym.Env):
         )
         plt.draw()
         plt.pause(1)
-        plt.clf()
+        plt.close()
 
 
 if __name__ == "__main__":

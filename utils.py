@@ -29,7 +29,6 @@ class VideoRecorderCallback(BaseCallback):
         self._deterministic = deterministic
 
     def _on_step(self) -> bool:
-        print("running in callback")
         if self.n_calls % self._render_freq == 0:
             screens = []
 
@@ -41,7 +40,7 @@ class VideoRecorderCallback(BaseCallback):
                 :param _globals: A dictionary containing all global variables of the callback's scope
                 """
                 screen = self._eval_env.render()
-                screens.append(screen)
+                screens.append(screen.transpose(2, 0, 1))
 
             print("starting evaluation")
             reward = evaluate_policy(
@@ -58,5 +57,5 @@ class VideoRecorderCallback(BaseCallback):
                 Video(th.from_numpy(np.asarray([screens])), fps=40),
                 exclude=("stdout", "log", "json", "csv"),
             )
-            self.logger.record("trajectory/reward",reward)
+            self.logger.record("trajectory/reward",np.mean(reward))
         return True

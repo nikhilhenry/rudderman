@@ -145,7 +145,7 @@ class KarmanVortexStreetEnv(gym.Env):
         self._step_count += 1
         # scaling the action to degrees
         action = scale_to_angle(action[0])
-        action = 0.0
+        action = 0.0 #:FIXME: remove forced zero angle
         # convert the action angle to radians
         angle = flow.math.degrees_to_radians(action)
         self._angle = angle
@@ -243,13 +243,11 @@ class KarmanVortexStreetEnv(gym.Env):
 if __name__ == "__main__":
     env = KarmanVortexStreetEnv(render_mode="rgb_array")
     check_env(env, warn=True)
-    env = RecordVideo( env, video_folder="./", name_prefix="eval", episode_trigger=lambda x: True,)
+    env = RecordVideo( env, video_folder="./logs/vortex_outputs", name_prefix="eval", episode_trigger=lambda x: True,)
     observation = env.reset()
     done = False
     while not done:
-        #action = env.action_space.sample()[0]
-        action = 90 
-        #print(f"Action: {scale_to_angle(action)}")
+        action = env.action_space.sample()[0]
+        print(f"Action: {scale_to_angle(action)}")
         observation, reward, done, _, info = env.step([action])
-#        print(observation,reward,info)
     env.close()

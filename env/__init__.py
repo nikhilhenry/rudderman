@@ -1,2 +1,2 @@
-from vortex_env import KarmanVortexStreetEnv
-from simple_env import SimpleFlowEnv
+from env.vortex_env import KarmanVortexStreetEnv
+from env.simple_env import SimpleFlowEnv

@@ -28,7 +28,7 @@ _BOUNDARY_MASK = flow.StaggeredGrid(
 )
 
 
-_DT = 0.25
+_DT = 0.5
 # defining rudder geometry
 _RUDDER_WIDTH = 0.5
 _RUDDER_LENGTH = 2.5
@@ -119,20 +119,24 @@ class KarmanVortexStreetEnv(gym.Env):
 
         self._prev_distance = 0
 
+        # storing this angle for rendering
+        self._angle = 0
+
         observation = self._get_obs()
         info = self._get_info()
 
         return observation, info
 
-    def render(self, angle=0):
+    def render(self):
         if self.render_mode == "rgb_array":
-            return self._render_frame(angle)
+            return self._render_frame(self._angle)
 
     def step(self, action):
         self._step_count += 1
 
         # convert the action angle to radians
         angle = flow.math.degrees_to_radians(action)
+        self._angle = angle
         self._velocity, self._pressure, self._boat, _ = _sim_step(
             self._velocity, self._pressure, self._boat, angle
         )
@@ -142,7 +146,7 @@ class KarmanVortexStreetEnv(gym.Env):
 
         # check to see that the boat is still in the world
         [x, y] = self._boat.geometry.center.numpy()
-        if x > _SIZE[0] and x < 0 and y > _SIZE[1] and y < 0:
+        if x > _SIZE[0] or x < 0 or y > _SIZE[1] or y < 0:
             terminated = True
             reward = -1 * self._step_count
             return observation, reward, terminated, False, info

@@ -1,6 +1,5 @@
 from stable_baselines3 import A2C
 from stable_baselines3.common.monitor import Monitor
-from gymnasium.wrappers import TimeLimit
 import argparse
 from env import SimpleFlowEnv
 from utils import VideoRecorderCallback
@@ -14,7 +13,7 @@ args = parser.parse_args()
 print(f"Running experiment {args.name}")
 
 # Instantiate the env
-env = TimeLimit(SimpleFlowEnv(), max_episode_steps=5000)
+env = SimpleFlowEnv()
 # Train the agent
 model = A2C("MlpPolicy", env, verbose=1, tensorboard_log="./logs/")
 video_recoder = VideoRecorderCallback(

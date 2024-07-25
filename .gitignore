@@ -1,2 +1,5 @@
 old
 outputs
+__pycache__
+logs/*
+!logs/.gitkeep

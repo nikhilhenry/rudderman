@@ -73,8 +73,10 @@ class KarmanVortexStreetEnv(gym.Env):
         self._step_count = 0
 
         # @todo randomly sample the start and target
-        start_x = self._CYLINDER_X + 5 * self._OBSTACLE_DIAMETER
-        start_y = self._CYLINDER_Y - 2.05 * self._OBSTACLE_DIAMETER
+        #start_x = self._CYLINDER_X + 5 * self._OBSTACLE_DIAMETER
+        #start_y = self._CYLINDER_Y - 2.05 * self._OBSTACLE_DIAMETER
+        start_x = 64
+        start_y =  10
         target_x = self._CYLINDER_X + 5 * self._OBSTACLE_DIAMETER
         target_y = self._CYLINDER_Y + 2.05 * self._OBSTACLE_DIAMETER
         _start_position = flow.vec(x=start_x, y=start_y)
@@ -163,9 +165,9 @@ class KarmanVortexStreetEnv(gym.Env):
         return observation, reward, terminated, False, info
 
     def _render_frame(self, angle):
-        d = flow.plot(self._CYLINDER_GEOM,size=(10,5))
+        d = flow.plot([self._velocity,self._CYLINDER_GEOM,self._boat],size=(10,5),overlay="list")
         plt.draw()
-        plt.pause(0.1)
+        plt.pause(1)
         plt.clf()
 
 if __name__ == "__main__":

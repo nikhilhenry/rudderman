@@ -4,6 +4,8 @@ from gymnasium import spaces
 from phi.jax import flow
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+import numpy as np
 
 plt.rcParams["figure.figsize"] = (10, 5)
 
@@ -207,13 +209,20 @@ class KarmanVortexStreetEnv(gym.Env):
         # configurations
         plt.xlim(0, 128)
         plt.ylim(0, 64)
-        plt.draw()
-        plt.pause(3)
-        plt.close()  #:FIXME: force phiflow to use the same figure and instead clear the figure
+        if self.render_mode == "human":
+            plt.draw()
+            plt.pause(0.25)
+            plt.close()  #:FIXME: force phiflow to use the same figure and instead clear the figure
+            return
+        if self.render_mode == "rgb_array":
+            canvas = FigureCanvasAgg(plt.gcf())
+            canvas.draw()
+            buf = canvas.buffer_rgba()
+            return np.asarray(buf)
 
 
 if __name__ == "__main__":
-    env = KarmanVortexStreetEnv(render_mode="human")
+    env = KarmanVortexStreetEnv(render_mode="rgb_array")
     observation = env.reset()
     for i in range(100):
         action = env.action_space.sample()[0]

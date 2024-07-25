@@ -37,11 +37,13 @@ _RUDDER_LENGTH_HALF = _RUDDER_LENGTH / 2
 _RUDDER_GEOM = flow.geom.Box(x=_RUDDER_WIDTH, y=_RUDDER_LENGTH)
 _SPEED = 2
 
+
 def scale_to_angle(x):
-    return 180 * (x+1)
+    return 180 * (x + 1)
+
 
 def angle_to_scale(x):
-    return x/180 -1
+    return x / 180 - 1
 
 
 @flow.math.jit_compile
@@ -87,7 +89,7 @@ class KarmanVortexStreetEnv(gym.Env):
 
     def _get_obs(self):
         x, y = self._boat.geometry.center
-        return [x, y]
+        return np.asarray([x, y])
 
     def _get_info(self):
         return {
@@ -141,7 +143,7 @@ class KarmanVortexStreetEnv(gym.Env):
     def step(self, action):
         self._step_count += 1
         # scaling the action to degrees
-        action = scale_to_angle(action)
+        action = scale_to_angle(action[0])
         # convert the action angle to radians
         angle = flow.math.degrees_to_radians(action)
         self._angle = angle
@@ -237,10 +239,10 @@ class KarmanVortexStreetEnv(gym.Env):
 
 if __name__ == "__main__":
     env = KarmanVortexStreetEnv(render_mode="rgb_array")
-    check_env(env,warn=True)
+    check_env(env, warn=True)
     env = RecordVideo(
         env,
-        video_folder="vortex-agent",
+        video_folder="outputs/vortex-agent",
         name_prefix="eval",
         episode_trigger=lambda x: True,
     )
@@ -248,5 +250,5 @@ if __name__ == "__main__":
     for i in range(100):
         action = env.action_space.sample()[0]
         print(f"Action: {scale_to_angle(action)}")
-        observation, reward, done, _, info = env.step(action)
+        observation, reward, done, _, info = env.step([action])
     env.close()

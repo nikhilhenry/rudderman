@@ -1,6 +1,7 @@
 """
 referenced from stable-baselines-3 documentation
 """
+
 from typing import Any, Dict
 
 import gymnasium as gym
@@ -13,7 +14,13 @@ from stable_baselines3.common.logger import Video
 
 
 class VideoRecorderCallback(BaseCallback):
-    def __init__(self, eval_env: gym.Env, render_freq: int, n_eval_episodes: int = 1, deterministic: bool = True):
+    def __init__(
+        self,
+        eval_env: gym.Env,
+        render_freq: int,
+        n_eval_episodes: int = 1,
+        deterministic: bool = True,
+    ):
         """
         Records a video of an agent's trajectory traversing ``eval_env`` and logs it to TensorBoard
 
@@ -33,16 +40,9 @@ class VideoRecorderCallback(BaseCallback):
             screens = []
 
             def grab_screens(_locals: Dict[str, Any], _globals: Dict[str, Any]) -> None:
-                """
-                Renders the environment in its current state, recording the screen in the captured `screens` list
-
-                :param _locals: A dictionary containing all local variables of the callback's scope
-                :param _globals: A dictionary containing all global variables of the callback's scope
-                """
                 screen = self._eval_env.render()
                 screens.append(screen.transpose(2, 0, 1))
 
-            print("starting evaluation")
             reward = evaluate_policy(
                 self.model,
                 self._eval_env,
@@ -51,11 +51,10 @@ class VideoRecorderCallback(BaseCallback):
                 deterministic=self._deterministic,
                 return_episode_rewards=True,
             )
-            print("completed evaluation")
             self.logger.record(
                 "trajectory/video",
                 Video(th.from_numpy(np.asarray([screens])), fps=40),
                 exclude=("stdout", "log", "json", "csv"),
             )
-            self.logger.record("trajectory/reward",np.mean(reward))
+            self.logger.record("trajectory/reward", np.mean(reward))
         return True

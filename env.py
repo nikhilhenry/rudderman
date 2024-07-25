@@ -1,6 +1,7 @@
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
+from gymnasium.wrappers import RecordVideo
 from phi.jax import flow
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
@@ -217,12 +218,19 @@ class KarmanVortexStreetEnv(gym.Env):
         if self.render_mode == "rgb_array":
             canvas = FigureCanvasAgg(plt.gcf())
             canvas.draw()
+            plt.close()
             buf = canvas.buffer_rgba()
             return np.asarray(buf)
 
 
 if __name__ == "__main__":
     env = KarmanVortexStreetEnv(render_mode="rgb_array")
+    env = RecordVideo(
+        env,
+        video_folder="vortex-agent",
+        name_prefix="eval",
+        episode_trigger=lambda x: True,
+    )
     observation = env.reset()
     for i in range(100):
         action = env.action_space.sample()[0]

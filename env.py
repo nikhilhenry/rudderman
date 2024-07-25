@@ -2,6 +2,7 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 from gymnasium.wrappers import RecordVideo
+from stable_baselines3.common.env_checker import check_env
 from phi.jax import flow
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
@@ -36,6 +37,12 @@ _RUDDER_LENGTH_HALF = _RUDDER_LENGTH / 2
 _RUDDER_GEOM = flow.geom.Box(x=_RUDDER_WIDTH, y=_RUDDER_LENGTH)
 _SPEED = 2
 
+def scale_to_angle(x):
+    return 180 * (x+1)
+
+def angle_to_scale(x):
+    return x/180 -1
+
 
 @flow.math.jit_compile
 def _sim_step(v, p, obj, angle: float):
@@ -69,7 +76,7 @@ class KarmanVortexStreetEnv(gym.Env):
         # continous actions space of degree of rudder rotation from 0 to 360
         # should these be in radians instead? should these normalised
 
-        self.action_space = spaces.Box(0, 360)
+        self.action_space = spaces.Box(-1, 1)
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -133,7 +140,8 @@ class KarmanVortexStreetEnv(gym.Env):
 
     def step(self, action):
         self._step_count += 1
-
+        # scaling the action to degrees
+        action = scale_to_angle(action)
         # convert the action angle to radians
         angle = flow.math.degrees_to_radians(action)
         self._angle = angle
@@ -229,6 +237,7 @@ class KarmanVortexStreetEnv(gym.Env):
 
 if __name__ == "__main__":
     env = KarmanVortexStreetEnv(render_mode="rgb_array")
+    check_env(env,warn=True)
     env = RecordVideo(
         env,
         video_folder="vortex-agent",
@@ -238,6 +247,6 @@ if __name__ == "__main__":
     observation = env.reset()
     for i in range(100):
         action = env.action_space.sample()[0]
-        print(f"Action: {action}")
+        print(f"Action: {scale_to_angle(action)}")
         observation, reward, done, _, info = env.step(action)
     env.close()

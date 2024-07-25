@@ -162,14 +162,27 @@ class KarmanVortexStreetEnv(gym.Env):
         return observation, reward, terminated, False, info
 
     def _render_frame(self, angle):
-        #d = flow.plot( [self._velocity, _CYLINDER_GEOM, self._boat], size=(10, 5), overlay="list")
+        # creating the rudder to be drawn
+        x, y = self._boat.geometry.center
+        positon = flow.vec(x=x, y=y - _RUDDER_LENGTH_HALF)
+        rudder = _RUDDER_GEOM.at(positon)
+        rudder = flow.geom.rotate(rudder, angle, flow.vec(x=x, y=y))
+        # drawing vector field and rudder
+        d = flow.plot(self._velocity,rudder,size=(10, 5),overlay="args")
+        # drawing the obstacle
         circle  = mpatches.Circle((_CYLINDER_X,_CYLINDER_Y),_OBSTACLE_DIAMETER / 2,fc="k")
         plt.gca().add_patch(circle)
+        # drawing the boat
+        boat = mpatches.Circle((x,y),1 / 2,fc="r")
+        plt.gca().add_patch(boat)
+
+
+        # configurations
         plt.xlim(0,128)
         plt.ylim(0,64)
         plt.draw()
-        plt.pause(0.25)
-        plt.clf()
+        plt.pause(1)
+        plt.close() #:FIXME: force phiflow to use the same figure and instead clear the figure
 
 
 if __name__ == "__main__":

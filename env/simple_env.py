@@ -164,7 +164,7 @@ class SimpleFlowEnv(gym.Env):
         bonus = self.bonus if terminated else 0
         reward = (
             -1 * self._step_count
-            + 10 * np.max((self._prev_distance - distance_to_target), 0)
+            + 100 * np.max((self._prev_distance - distance_to_target), 0)
             + bonus
         )
         self._prev_distance = distance_to_target

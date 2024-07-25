@@ -18,7 +18,7 @@ env = SimpleFlowEnv()
 model = A2C("MlpPolicy", env, verbose=1, tensorboard_log="./logs/")
 video_recoder = VideoRecorderCallback(
     Monitor(SimpleFlowEnv(render_mode="rgb_array")),
-    render_freq=5000,
+    render_freq=50000,
 )
 model.learn(int(8e5), tb_log_name=args.name, progress_bar=True, callback=video_recoder)
 

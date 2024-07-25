@@ -4,7 +4,8 @@ from gymnasium import spaces
 from phi.jax import flow
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
-plt.rcParams["figure.figsize"] = (10,5)
+
+plt.rcParams["figure.figsize"] = (10, 5)
 
 """
 Defining the phiflow constants
@@ -95,14 +96,14 @@ class KarmanVortexStreetEnv(gym.Env):
         self._step_count = 0
 
         # @todo randomly sample the start and target
-        # start_x = self._CYLINDER_X + 5 * self._OBSTACLE_DIAMETER
-        # start_y = self._CYLINDER_Y - 2.05 * self._OBSTACLE_DIAMETER
-        start_x = 64
-        start_y = 10
+        self.start_x = _CYLINDER_X + 5 * _OBSTACLE_DIAMETER
+        self.start_y = _CYLINDER_Y - 2.05 * _OBSTACLE_DIAMETER
         target_x = _CYLINDER_X + 5 * _OBSTACLE_DIAMETER
         target_y = _CYLINDER_Y + 2.05 * _OBSTACLE_DIAMETER
-        _start_position = flow.vec(x=start_x, y=start_y)
+        _start_position = flow.vec(x=self.start_x, y=self.start_y)
         self._target_position = flow.vec(x=target_x, y=target_y)
+        self._target_x = target_x
+        self._target_y = target_y
 
         """
         Setting up the PhiFlow sim environment
@@ -168,21 +169,47 @@ class KarmanVortexStreetEnv(gym.Env):
         rudder = _RUDDER_GEOM.at(positon)
         rudder = flow.geom.rotate(rudder, angle, flow.vec(x=x, y=y))
         # drawing vector field and rudder
-        d = flow.plot(self._velocity,rudder,size=(10, 5),overlay="args")
+        d = flow.plot(self._velocity, rudder, size=(10, 5), overlay="args")
         # drawing the obstacle
-        circle  = mpatches.Circle((_CYLINDER_X,_CYLINDER_Y),_OBSTACLE_DIAMETER / 2,fc="k")
+        circle = mpatches.Circle(
+            (_CYLINDER_X, _CYLINDER_Y),
+            _OBSTACLE_DIAMETER / 2,
+            ec="k",
+            fc="tab:gray",
+            lw=1,
+        )
         plt.gca().add_patch(circle)
         # drawing the boat
-        boat = mpatches.Circle((x,y),1 / 2,fc="r")
+        boat = mpatches.Circle((x, y), 0.5, fc="k")
         plt.gca().add_patch(boat)
 
-
+        # drawing the start and end positions
+        start_circle = mpatches.Circle(
+            (self.start_x, self.start_y),
+            1,
+            ec="xkcd:violet",
+            fc="xkcd:violet",
+            alpha=0.5,
+            ls="--",
+            lw=1,
+        )
+        plt.gca().add_patch(start_circle)
+        target_circle = mpatches.Circle(
+            (self._target_x, self._target_y),
+            _OBSTACLE_DIAMETER / 6,
+            ec="xkcd:red",
+            fc="xkcd:red",
+            alpha=0.5,
+            ls="--",
+            lw=1,
+        )
+        plt.gca().add_patch(target_circle)
         # configurations
-        plt.xlim(0,128)
-        plt.ylim(0,64)
+        plt.xlim(0, 128)
+        plt.ylim(0, 64)
         plt.draw()
-        plt.pause(1)
-        plt.close() #:FIXME: force phiflow to use the same figure and instead clear the figure
+        plt.pause(3)
+        plt.close()  #:FIXME: force phiflow to use the same figure and instead clear the figure
 
 
 if __name__ == "__main__":

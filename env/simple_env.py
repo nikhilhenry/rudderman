@@ -65,7 +65,7 @@ class SimpleFlowEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, render_mode=None):
-        self.bonus = 30000
+        self.bonus = 300000
 
         # for flow blind boat only the relative position is provided as an observation
         self.observation_space = spaces.Box(0, _SIZE[0], shape=(2,))
@@ -84,7 +84,7 @@ class SimpleFlowEnv(gym.Env):
 
     def _get_obs(self):
         x, y = self._boat.geometry.center
-        return np.asarray([x, y])
+        return np.asarray([self._target_x - x, self._target_y - y])
 
     def _get_info(self):
         return {
@@ -158,13 +158,13 @@ class SimpleFlowEnv(gym.Env):
 
         # check euclidean distance between boat's position and target
         distance_to_target = flow.math.vec_length(
-            self._boat.geometry.center - self._target_position
+            self._target_position - self._boat.geometry.center
         ).numpy()
         terminated = True if distance_to_target <= _OBSTACLE_DIAMETER / 6 else False
         bonus = self.bonus if terminated else 0
         reward = (
             -1 * self._step_count
-            + 10 * (distance_to_target - self._prev_distance)
+            + 10 * np.max((self._prev_distance - distance_to_target), 0)
             + bonus
         )
         self._prev_distance = distance_to_target

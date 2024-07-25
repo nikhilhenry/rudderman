@@ -254,4 +254,5 @@ if __name__ == "__main__":
         action = env.action_space.sample()[0]
         print(f"Action: {scale_to_angle(action)}")
         observation, reward, done, _, info = env.step([action])
+    print(observation,reward,done,info)
     env.close()

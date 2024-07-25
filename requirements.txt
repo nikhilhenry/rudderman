@@ -3,3 +3,4 @@ jax[cuda12]
 stable-baselines3[extra]
 phiflow
 matplotlib
+moviepy[optional]

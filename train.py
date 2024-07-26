@@ -1,6 +1,6 @@
 from stable_baselines3 import A2C
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines.common.callbacks import (
+from stable_baselines3.common.callbacks import (
     CallbackList,
     CheckpointCallback,
     EvalCallback,

@@ -68,7 +68,7 @@ class SimpleFlowEnv(gym.Env):
         self.bonus = 300000
 
         # for flow blind boat only the relative position is provided as an observation
-        self.observation_space = spaces.Box(0, _SIZE[0], shape=(2,))
+        self.observation_space = spaces.Box(0, 1, shape=(2,))
 
         # continous actions space of degree of rudder rotation from 0 to 360
         # should these be in radians instead? should these normalised
@@ -84,12 +84,20 @@ class SimpleFlowEnv(gym.Env):
 
     def _get_obs(self):
         x, y = self._boat.geometry.center
-        return np.asarray([self._target_x - x, self._target_y - y])
+        rel_x, rel_y = self._target_x - x, self._target_y - y
+        REL_X_MAX = 140
+        REL_X_MIN = -REL_X_MAX
+        REL_Y_MAX = 70
+        REL_Y_MIN = -REL_Y_MAX
+        # normalise these values
+        rel_x = (rel_x - REL_X_MIN) / (REL_X_MAX - REL_X_MIN)
+        rel_y = (rel_y - REL_Y_MIN) / (REL_Y_MAX - REL_Y_MIN)
+        return np.asarray([rel_x, rel_y], dtype=np.float32)
 
     def _get_info(self):
         return {
-            "distance": 
-                flow.math.numpy(flow.math.vec_length(self._boat.geometry.center - self._target_position)
+            "distance": flow.math.numpy(
+                flow.math.vec_length(self._boat.geometry.center - self._target_position)
             )
         }
 
@@ -152,7 +160,7 @@ class SimpleFlowEnv(gym.Env):
             truncated = True
             reward = 0
             return observation, reward, terminated, truncated, info
-        
+
         if self._step_count > 350:
             terminated = False
             truncated = True
@@ -166,12 +174,8 @@ class SimpleFlowEnv(gym.Env):
         ).numpy()
         terminated = True if distance_to_target <= _OBSTACLE_DIAMETER / 6 else False
         bonus = self.bonus if terminated else 0
-        move_score =np.max([(self._prev_distance - distance_to_target), 1]) 
-        #print(move_score)
-        reward = (
-            + 10 *  move_score
-            + bonus
-        )
+        move_score = np.max([(self._prev_distance - distance_to_target), 1])
+        reward = 10 * move_score + bonus
         self._prev_distance = distance_to_target
 
         if self.render_mode == "human":

@@ -88,12 +88,8 @@ class SimpleFlowEnv(gym.Env):
 
     def _get_info(self):
         return {
-            "distance": np.linalg.norm(
-                flow.math.numpy(
-                    flow.math.vec_length(
-                        self._boat.geometry.center - self._target_position
-                    )
-                )
+            "distance": 
+                flow.math.numpy(flow.math.vec_length(self._boat.geometry.center - self._target_position)
             )
         }
 
@@ -152,9 +148,17 @@ class SimpleFlowEnv(gym.Env):
         # check to see that the boat is still in the world
         [x, y] = self._boat.geometry.center.numpy()
         if x > _SIZE[0] or x < 0 or y > _SIZE[1] or y < 0:
-            terminated = True
-            reward = -1 * self._step_count
-            return observation, reward, terminated, False, info
+            terminated = False
+            truncated = True
+            reward = 0
+            return observation, reward, terminated, truncated, info
+        
+        if self._step_count > 350:
+            terminated = False
+            truncated = True
+            reward = 0
+            print("exceeded number of iterations")
+            return observation, reward, terminated, truncated, info
 
         # check euclidean distance between boat's position and target
         distance_to_target = flow.math.vec_length(
@@ -162,9 +166,10 @@ class SimpleFlowEnv(gym.Env):
         ).numpy()
         terminated = True if distance_to_target <= _OBSTACLE_DIAMETER / 6 else False
         bonus = self.bonus if terminated else 0
+        move_score =np.max([(self._prev_distance - distance_to_target), 1]) 
+        #print(move_score)
         reward = (
-            -1 * self._step_count
-            + 100 * np.max((self._prev_distance - distance_to_target), 0)
+            + 10 *  move_score
             + bonus
         )
         self._prev_distance = distance_to_target

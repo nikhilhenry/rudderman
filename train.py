@@ -1,5 +1,10 @@
 from stable_baselines3 import A2C
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines.common.callbacks import (
+    CallbackList,
+    CheckpointCallback,
+    EvalCallback,
+)
 import argparse
 from env import SimpleFlowEnv
 from utils import VideoRecorderCallback
@@ -20,6 +25,14 @@ video_recoder = VideoRecorderCallback(
     Monitor(SimpleFlowEnv(render_mode="rgb_array")),
     render_freq=50000,
 )
+eval_callback = EvalCallback(
+    env,
+    best_model_save_path="./logs/best_model",
+    log_path="./logs/results",
+    eval_freq=int(1e5),
+)
+
+callback = CallbackList([video_recoder, eval_callback])
 model.learn(int(8e5), tb_log_name=args.name, progress_bar=True, callback=video_recoder)
 
 save_path = Path(args.dir)
